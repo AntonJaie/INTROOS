@@ -18,6 +18,7 @@
 int space = 0;//used to store the character space currently in
 char *vidptr = (char*)0xb8000;//video mem begins here.
 int fColor = 0x07;//used to store the current font color 
+int capsEn = 0;
 char *address;
 
 void showCursor();
@@ -153,16 +154,9 @@ int strlen(char *str){
 	return i;
 }
 
-char *buildString(char *str, char a){
-	/*char *new = new char[strlen(str)+2];
-	int i = 0;
-	while(str[i]!='\0'){
-		new[i] = str[i];
-		i++;
-	}*/
-	str[strlen(str)+1] = a;
-	str[strlen(str)+2] = '\0';
-	return str;
+void buildString(char *str, char a){//, int i){//not working properly when used in scan
+	str[strlen(str)] = a;
+	str[strlen(str)+1] = '\0';
 }
 
 void backSpace(int temp){
@@ -174,7 +168,7 @@ void backSpace(int temp){
 	}
 }
 
-char keyboardConv(int a){//converts keyboard codes to actual characters
+char keyboardConvLow(int a){//converts keyboard codes to actual characters
 	switch(a){
 		case 16: return 'q';
 		case 17: return 'w';
@@ -205,11 +199,44 @@ char keyboardConv(int a){//converts keyboard codes to actual characters
 		case 49: return 'n';
 		case 50: return 'm';
 
-		case 57: return ' ';
 	}
 }
 
-void scan(){//scans a string 
+char keyboardConvUp(int a){//converts keyboard codes to actual characters
+	switch(a){
+		case 16: return 'Q';
+		case 17: return 'W';
+		case 18: return 'E';
+		case 19: return 'R';
+		case 20: return 'T';
+		case 21: return 'Y';
+		case 22: return 'U';
+		case 23: return 'I';
+		case 24: return 'O';
+		case 25: return 'P';
+
+		case 30: return 'A';
+		case 31: return 'S';
+		case 32: return 'D';
+		case 33: return 'F';
+		case 34: return 'G';
+		case 35: return 'H';
+		case 36: return 'J';
+		case 37: return 'K';
+		case 38: return 'L';
+
+		case 44: return 'Z';
+		case 45: return 'X';
+		case 46: return 'C';
+		case 47: return 'V';
+		case 48: return 'B';
+		case 49: return 'N';
+		case 50: return 'M';
+
+	}
+}
+
+void scan(char *str){//scans and handles keyboard hits 
 	int temp = space;
 	char c;
 	do{
@@ -218,31 +245,48 @@ void scan(){//scans a string
 		    c = inportb(0x60);
 		    if(c>0)
 			{
-			    if( ((c<26)&&(c>15)) || ((c<39)&&(c>29)) || ((c<51)&&(c>43)) || (c==57))
-			    	printChar(keyboardConv(c)); //print on screen
-			    else if(c == 14)
+			    if( ((c<26)&&(c>15)) || ((c<39)&&(c>29)) || ((c<51)&&(c>43))){//if letters are pressed
+				if(capsEn)
+			    		printChar(keyboardConvUp(c)); //print on screen
+				else
+			    		printChar(keyboardConvLow(c));
+			    }
+			    else if(c == 14)//backspace
 			        backSpace(temp);
-			    else if(c == 28){
+			    else if(c == 28){//when enter is pressed
+				str = "";
+				int temp2 = space;
+				int k = temp;
+				/*for(temp = temp; temp < temp2; temp+=2){//This Does Not F*****G WORK!!!
+					buildString(str, vidptr[temp],(temp-k)/2);
+					str[(temp-k)/2] = vidptr[temp];
+					str[((temp-k)/2)+1] = '\0';
+				}*/
 				printChar('\n');
 				print(address);
 				temp = space;
 			    }
-			    else if(c == 1){
+			    else if(c == 1){//escape
 				clearLine();
 				print(address);
 				temp = space;
 			    }
+			    else if(c == 57)//space
+			        printChar(' ');
+			    else if(c == 58)//caps lock
+				capsEn = !capsEn;
 			}
 		    }
-	}while(c!=1||c!=28);//esc or enter
+	}while(c!=1&&c!=28);//esc or enter
 }
 
 void kmain(void)
 {
 	int d = 5000;
 	address = "home:";
+	char *clipboard = "";
 	clear();
-	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
+	/*print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
 	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
@@ -274,7 +318,7 @@ void kmain(void)
 	delay(d);
 	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
-	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
+	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");*/
 	delay(d);
 
 	setColor(BLACK, WHITE);
@@ -283,7 +327,14 @@ void kmain(void)
 	//load();
 	//gotoxy(0,24);
 	//clear();
-	scan();
+	scan(clipboard);
+	
+	//test if buildString works
+	clipboard = "hello";
+	buildString(clipboard,'a');
+	print(clipboard);
+        print(address);
+	//and it works!!!
 	return;
 }
 
