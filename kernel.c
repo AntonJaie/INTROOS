@@ -236,7 +236,7 @@ char keyboardConvUp(int a){//converts keyboard codes to actual characters
 	}
 }
 
-void scan(char *str){//scans and handles keyboard hits 
+void scan(char *str){//scans and handles keyboard hits void scan(char *str){//scans and handles keyboard hits 
 	int temp = space;
 	char c;
 	do{
@@ -246,22 +246,22 @@ void scan(char *str){//scans and handles keyboard hits
 		    if(c>0)
 			{
 			    if( ((c<26)&&(c>15)) || ((c<39)&&(c>29)) || ((c<51)&&(c>43))){//if letters are pressed
-				if(capsEn)
+				if(capsEn){
 			    		printChar(keyboardConvUp(c)); //print on screen
-				else
+					buildString(str,keyboardConvUp(c));
+				}
+				else{
 			    		printChar(keyboardConvLow(c));
+					buildString(str,keyboardConvLow(c));
+				}
 			    }
-			    else if(c == 14)//backspace
+			    else if(c == 14){//backspace
 			        backSpace(temp);
+				str[strlen(str)-1] = '\0';
+				}
 			    else if(c == 28){//when enter is pressed
-				str = "";
 				int temp2 = space;
 				int k = temp;
-				/*for(temp = temp; temp < temp2; temp+=2){//This Does Not F*****G WORK!!!
-					buildString(str, vidptr[temp],(temp-k)/2);
-					str[(temp-k)/2] = vidptr[temp];
-					str[((temp-k)/2)+1] = '\0';
-				}*/
 				printChar('\n');
 				print(address);
 				temp = space;
@@ -271,8 +271,10 @@ void scan(char *str){//scans and handles keyboard hits
 				print(address);
 				temp = space;
 			    }
-			    else if(c == 57)//space
+			    else if(c == 57){//space
 			        printChar(' ');
+				buildString(str,' ');
+			    }
 			    else if(c == 58)//caps lock
 				capsEn = !capsEn;
 			}
@@ -328,13 +330,9 @@ void kmain(void)
 	//gotoxy(0,24);
 	//clear();
 	scan(clipboard);
-	
-	//test if buildString works
-	clipboard = "hello";
-	buildString(clipboard,'a');
+	printChar('\n');
 	print(clipboard);
-        print(address);
-	//and it works!!!
+	
 	return;
 }
 
