@@ -21,6 +21,46 @@ int fColor = 0x07;//used to store the current font color
 int capsEn = 0;
 char *address;
 
+char kbdus[128] =
+{
+    0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
+  '9', '0', '-', '=', '\b',	/* Backspace */
+  '\t',			/* Tab */
+  'q', 'w', 'e', 'r',	/* 19 */
+  't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',	/* Enter key */
+    0,			/* 29   - Control */
+  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',	/* 39 */
+ '\'', '`',   0,		/* Left shift */
+ '\\', 'z', 'x', 'c', 'v', 'b', 'n',			/* 49 */
+  'm', ',', '.', '/',   0,				/* Right shift */
+  '*',//55
+    0,	/* Alt */
+  ' ',	/* Space bar */
+    0,	/* Caps lock */
+    0,	/* 59 - F1 key ... > */
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,	/* < ... F10 */
+    0,	/* 69 - Num lock*/
+    0,	/* Scroll Lock */
+    0,	/* Home key */
+    0,	/* Up Arrow */
+    0,	/* Page Up */
+  '-',//66
+    0,	/* Left Arrow */
+    0,
+    0,	/* Right Arrow */
+  '+',//70
+    0,	/* 79 - End key*/
+    0,	/* Down Arrow */
+    0,	/* Page Down */
+    0,	/* Insert Key */
+    0,	/* Delete Key */
+    0,   0,   0,
+    0,	/* F11 Key */
+    0,	/* F12 Key */
+    0,	/* All other keys are undefined */
+};		
+
 void showCursor();
 void clearLine();
 
@@ -102,7 +142,7 @@ void clearLine(){//clears the current line where the cursor is in
 		//blank character
 		vidptr[j] = ' ';
 		//attribute-byte: light grey on black screen	
-		vidptr[j+1] = 0x04; 		
+		vidptr[j+1] = fColor; 		
 		j = j + 2;
 		i += 2;
 	}
@@ -115,7 +155,7 @@ void clear(){// clears the screen
 		//blank character
 		vidptr[j] = ' ';
 		//attribute-byte: light grey on black screen	
-		vidptr[j+1] = 0x04; 		
+		vidptr[j+1] = fColor; 		
 		j = j + 2;
 	}
 	space = 0;
@@ -168,119 +208,62 @@ void backSpace(int temp){
 	}
 }
 
-char keyboardConvLow(int a){//converts keyboard codes to actual characters
-	switch(a){
-		case 16: return 'q';
-		case 17: return 'w';
-		case 18: return 'e';
-		case 19: return 'r';
-		case 20: return 't';
-		case 21: return 'y';
-		case 22: return 'u';
-		case 23: return 'i';
-		case 24: return 'o';
-		case 25: return 'p';
-
-		case 30: return 'a';
-		case 31: return 's';
-		case 32: return 'd';
-		case 33: return 'f';
-		case 34: return 'g';
-		case 35: return 'h';
-		case 36: return 'j';
-		case 37: return 'k';
-		case 38: return 'l';
-
-		case 44: return 'z';
-		case 45: return 'x';
-		case 46: return 'c';
-		case 47: return 'v';
-		case 48: return 'b';
-		case 49: return 'n';
-		case 50: return 'm';
-
-	}
-}
-
-char keyboardConvUp(int a){//converts keyboard codes to actual characters
-	switch(a){
-		case 16: return 'Q';
-		case 17: return 'W';
-		case 18: return 'E';
-		case 19: return 'R';
-		case 20: return 'T';
-		case 21: return 'Y';
-		case 22: return 'U';
-		case 23: return 'I';
-		case 24: return 'O';
-		case 25: return 'P';
-
-		case 30: return 'A';
-		case 31: return 'S';
-		case 32: return 'D';
-		case 33: return 'F';
-		case 34: return 'G';
-		case 35: return 'H';
-		case 36: return 'J';
-		case 37: return 'K';
-		case 38: return 'L';
-
-		case 44: return 'Z';
-		case 45: return 'X';
-		case 46: return 'C';
-		case 47: return 'V';
-		case 48: return 'B';
-		case 49: return 'N';
-		case 50: return 'M';
-
-	}
-}
-
-void scan(char *str){//scans and handles keyboard hits void scan(char *str){//scans and handles keyboard hits 
+void scan(char *str){//scans and handles keyboard hits
 	int temp = space;
 	char c;
 	do{
 
 		if(inportb(0x60)!=c){ //PORT FROM WHICH WE READ
-		    c = inportb(0x60);
-		    if(c>0)
-			{
-			    if( ((c<26)&&(c>15)) || ((c<39)&&(c>29)) || ((c<51)&&(c>43))){//if letters are pressed
-				if(capsEn){
-			    		printChar(keyboardConvUp(c)); //print on screen
-					buildString(str,keyboardConvUp(c));
+			c = inportb(0x60);
+			if(c>0){
+				if( c<=13 || ((c<28)&&(c>15)) || ((c<42)&&(c>29)&&c!=40) || ((c<54)&&(c>43)) || c==55 || c==66 || c == 70 || c == 43){//if characters are pressed
+					if( ((c<26)&&(c>15)) || ((c<39)&&(c>29)) || ((c<51)&&(c>43))){//if letters are pressed
+						if(capsEn){
+					    		printChar(kbdus[c]-32); //print on screen
+							buildString(str,kbdus[c]-32);
+						}
+						else{
+					    		printChar(kbdus[c]);
+							buildString(str,kbdus[c]);
+						}
+					} else{
+					    	printChar(kbdus[c]); //print on screen
+						buildString(str,kbdus[c]);
+					}
 				}
-				else{
-			    		printChar(keyboardConvLow(c));
-					buildString(str,keyboardConvLow(c));
+				else if(c == 14){//backspace
+					backSpace(temp);
+					str[strlen(str)-1] = '\0';
+					}
+				else if(c == 28){//when enter is pressed
+					int temp2 = space;
+					int k = temp;
+					printChar('\n');
+					print(address);
+					temp = space;
 				}
-			    }
-			    else if(c == 14){//backspace
-			        backSpace(temp);
-				str[strlen(str)-1] = '\0';
+				else if(c == 1){//escape
+					clearLine();
+					print(address);
+					temp = space;
 				}
-			    else if(c == 28){//when enter is pressed
-				int temp2 = space;
-				int k = temp;
-				printChar('\n');
-				print(address);
-				temp = space;
-			    }
-			    else if(c == 1){//escape
-				clearLine();
-				print(address);
-				temp = space;
-			    }
-			    else if(c == 57){//space
-			        printChar(' ');
-				buildString(str,' ');
-			    }
-			    else if(c == 58)//caps lock
-				capsEn = !capsEn;
+				else if(c == 57){//space
+					printChar(' ');
+					buildString(str,' ');
+				}
+				else if(c == 58)//caps lock
+					capsEn = !capsEn;
+				else if(c == 54 || c == 42)
+					print("shift is pressed\n");
+				else
+					print("A key is pressed\n");
 			}
-		    }
+		}
+		outportb(0x60, 0);
 	}while(c!=1&&c!=28);//esc or enter
 }
+
+
 
 void kmain(void)
 {
@@ -288,7 +271,7 @@ void kmain(void)
 	address = "home:";
 	char *clipboard = "";
 	clear();
-	/*print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
+	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
 	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
@@ -320,19 +303,13 @@ void kmain(void)
 	delay(d);
 	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
-	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");*/
+	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
 
 	setColor(BLACK, WHITE);
 	print(address);
-	//delay(d);
-	//load();
-	//gotoxy(0,24);
-	//clear();
 	scan(clipboard);
-	printChar('\n');
 	print(clipboard);
-	
 	return;
 }
 
