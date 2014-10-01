@@ -19,7 +19,9 @@ int space = 0;//used to store the character space currently in
 char *vidptr = (char*)0xb8000;//video mem begins here.
 int fColor = 0x07;//used to store the current font color 
 int capsEn = 0;
+int ind = 0;
 char *address;
+//char *buffer;
 
 char kbdus[128] =
 {
@@ -105,11 +107,14 @@ void showCursor(){//where cursor should appear
 }
 
 void printChar(char str){//used to print strings acknowledging \t and \n
-	if(str == '\n'){//when \n is seen
+	if(str == '\n')//when \n is seen
 		space = (space/160) * 160 + 160;
-	}
-	else if(str == '\t'){//when \t is seen
+	else if(str == '\t')//when \t is seen
 		space += 10;
+	else if(str == '\"'){
+		vidptr[space] = '"';
+		vidptr[space+1] = fColor;
+		space += 2;
 	}
 	else{
 		vidptr[space] = str;
@@ -126,6 +131,11 @@ void print(char *str){//used to print strings acknowledging \t and \n
 		printChar(str[j]);
 		++j;
 	}
+}
+
+void printLn(char *str){
+	print(str);
+	printChar('\n');
 }
 
 void printColor(int colorA, int colorB, char *str){//use to print a specific text in a specific color then return to the pervious color
@@ -188,9 +198,8 @@ void load(){//produces loading screen
 
 int strlen(char *str){
 	int i = 0;
-	while(str[i]!='\0'){
+	while(str[i]!='\0')
 		i++;
-	}
 	return i;
 }
 
@@ -199,12 +208,64 @@ void buildString(char *str, char a){//, int i){//not working properly when used 
 	str[strlen(str)+1] = '\0';
 }
 
+void buildStringI(char *str, char a, int b){//not working properly when used in scan
+	str[b] = a;
+	str[b+1] = '\0';
+}
+
 void backSpace(int temp){
 	if(space!=temp){
 		space-=2;
+		ind--;
 		vidptr[space] = ' ';
 		vidptr[space+1] = 0x04; 		
 		showCursor();
+	}
+}
+
+void command(char *str){
+	if(str[0] == 's')
+		if(str[1] == 'a')
+			if(str[2] == 'y'){
+				if(str[3] == ' '){
+					int i = 4;
+					int j = 0;
+					while(str[i]!='\0'){
+						str[j] = str[i];
+						i++;
+						j++;
+					}
+	  				str[j] = '\0';
+					printLn(str);
+				}
+				else
+					printLn("Error: unrecognizable format, format should be \"say string\"");
+			}
+	if(str[0] == 'c')
+		if(str[1] == 'l')
+			if(str[2] == 's')
+				clear();
+	if(str[0] == 'm')
+		if(str[1] == 'a')
+			if(str[2] == 'r')
+			if(str[3] == 'q')
+			if(str[4] == 'u')
+			if(str[5] == 'e')
+			if(str[6] == 'e'){
+				int i = 8;
+				int j = 0;
+				while(str[i]!='\0'){
+					str[j] = str[i];
+					i++;
+					j++;
+				}
+  				str[j] = '\0';
+				printLn(str);
+			}
+	int j = 0;
+	while(str[j]!='\0'){
+		str[j] = '\0';
+		j++;
 	}
 }
 
@@ -212,7 +273,6 @@ void scan(char *str){//scans and handles keyboard hits
 	int temp = space;
 	char c;
 	do{
-
 		if(inportb(0x60)!=c){ //PORT FROM WHICH WE READ
 			c = inportb(0x60);
 			if(c>0){
@@ -220,36 +280,39 @@ void scan(char *str){//scans and handles keyboard hits
 					if( ((c<26)&&(c>15)) || ((c<39)&&(c>29)) || ((c<51)&&(c>43))){//if letters are pressed
 						if(capsEn){
 					    		printChar(kbdus[c]-32); //print on screen
-							buildString(str,kbdus[c]-32);
+							buildStringI(str,kbdus[c]-32,ind);
 						}
 						else{
 					    		printChar(kbdus[c]);
-							buildString(str,kbdus[c]);
+							buildStringI(str,kbdus[c],ind);
 						}
 					} else{
 					    	printChar(kbdus[c]); //print on screen
-						buildString(str,kbdus[c]);
+						buildStringI(str,kbdus[c],ind);
 					}
+					ind++;
 				}
 				else if(c == 14){//backspace
 					backSpace(temp);
-					str[strlen(str)-1] = '\0';
+					str[ind] = '\0';
 					}
 				else if(c == 28){//when enter is pressed
 					int temp2 = space;
 					int k = temp;
 					printChar('\n');
-					print(address);
 					temp = space;
+					ind = 0;
 				}
 				else if(c == 1){//escape
 					clearLine();
 					print(address);
 					temp = space;
+					ind = 0;
 				}
 				else if(c == 57){//space
 					printChar(' ');
-					buildString(str,' ');
+					buildStringI(str,' ', ind);
+					ind++;
 				}
 				else if(c == 58)//caps lock
 					capsEn = !capsEn;
@@ -268,8 +331,9 @@ void scan(char *str){//scans and handles keyboard hits
 void kmain(void)
 {
 	int d = 5000;
-	address = "home:";
+	address = "LatchOS>";
 	char *clipboard = "";
+	//buffer = "";
 	clear();
 	print("                   | |   | |   | |   | |   | |   | |   | |   | |\n");
 	delay(d);
@@ -307,9 +371,12 @@ void kmain(void)
 	delay(d);
 
 	setColor(BLACK, WHITE);
-	print(address);
-	scan(clipboard);
-	print(clipboard);
+	while(1){
+		print(address);
+		scan(clipboard);
+		command(clipboard);
+		print(clipboard);
+	}
 	return;
 }
 
