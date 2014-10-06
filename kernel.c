@@ -645,19 +645,25 @@ void initMarquee(){
 	marquee[0] = -1;
 }
 
-void addMarquee(int *num, char a){
+void addMarquee(int *num, char *a){
 	int y = space/160+1;
 	int last = 0;
+	int ctr = 0;
+	int temp;
 	if(y>=24){
 		y = 24;
 		printChar('\n');
 	}
 	while(num[last]!=-1)
 		last++;
-	num[last] = (y-1)*160;
+	temp = num[last] = (y-1)*160;
 	num[last+1] = -1;
-	vidptr[(y-1)*160] = a;
-	vidptr[(y-1)*160+1] = fColor;
+	while(a[ctr]!='\0'){
+		vidptr[temp] = a[ctr];
+		vidptr[temp+1] = fColor;
+		temp+=2;
+		ctr++;
+	}
 	gotoxy(0,y);
 }
 
@@ -674,22 +680,24 @@ void marqueeMov(){
 	int j = 0;
 	char a;
 	int c;
-	int temp;
+	char last;
+	int lastC;
+	int ctr;
 	while(marquee[j]!=-1){
 		a = vidptr[marquee[j]];
 		c = vidptr[marquee[j]+1];
-		temp = marquee[j];
-		marquee[j]+=2;
-		if(marquee[j] == ((temp/160+1)*160)){
-			vidptr[marquee[j]-2] = ' ';
-			vidptr[marquee[j]-1] = c;
-			marquee[j] = (marquee[j]/160-1)*160;
-		} else{
-			vidptr[marquee[j]-2] = ' ';
-			vidptr[marquee[j]-1] = c;
+		vidptr[marquee[j]] = vidptr[marquee[j]+158];
+		vidptr[marquee[j]+1] = vidptr[marquee[j]+159];
+		ctr = 2;
+		while(ctr < 160){
+			last = vidptr[marquee[j]+ctr];
+			lastC = vidptr[marquee[j]+ctr+1];
+			vidptr[marquee[j]+ctr] = a;
+			vidptr[marquee[j]+ctr+1] = c;
+			a = last;
+			c = lastC;
+			ctr+=2;
 		}
-		vidptr[marquee[j]] = a;
-		vidptr[marquee[j]+1] = c;
 		j++;
 	}	
 	
@@ -742,7 +750,19 @@ void command(char *str){
 			if(str[4] == 'u')
 			if(str[5] == 'e')
 			if(str[6] == 'e'){
-				addMarquee(marquee, str[8]);
+				if(str[7] == ' '){
+					int i = 8;
+					int j = 0;
+					while(str[i]!='\0'){
+						str[j] = str[i];
+						i++;
+						j++;
+					}
+	  				str[j] = '\0';
+					addMarquee(marquee, str);
+				}
+				else
+					printLn("Error: unrecognizable format, format should be \"say string\"");
 			}
 	int j = 0;
 	while(str[j]!='\0'){
